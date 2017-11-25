@@ -67,13 +67,13 @@ namespace DMXConsole
                 header = new byte[4];
                 data = new byte[513];
                 footer = new byte[1] { 0xE7 };//end packet
-                
+
                 //header data
                 header[0] = 0x7E;     //start packet
                 header[1] = 06;       //tx mode
                 header[2] = 01;       //???
                 header[3] = 02;       //start code
-                
+
                 SendData();
             }
             else
@@ -98,7 +98,6 @@ namespace DMXConsole
         {
             if (address < 512)
             {
-                //add 4 to ignore header data
                 data[address] = value;
             }
         }
@@ -115,6 +114,6 @@ namespace DMXConsole
                 Console.WriteLine("Could not write to device");
             }
         }
-        
+
     }
 }

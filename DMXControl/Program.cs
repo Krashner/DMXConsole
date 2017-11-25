@@ -15,7 +15,7 @@ namespace DMXConsole
         {
 
             //  Random rand = new Random();
-            // double a = 0.00, b = 0.00, c = 0.00, d = 0.00;
+            double a = 0.00, b = 0.00, c = 0.00, d = 0.00;
 
             dmxControl = new DmxDriver(0);
             dmxControl.OpenPort();
@@ -25,23 +25,39 @@ namespace DMXConsole
             //dmxControl.ChangeValue(t, 255);
 
             //dmxControl.SendData();
-
-
+            bool canChange = false;
+            int i = 1;
             while (true)
             {
                 /*
                 //color strength
-                double t = ((Math.Sin(a += 0.01) * .5 + .5)*.5+.5) * 255;
-                dmxControl.ChangeValue(361, (byte)t);
-                
-                t = ((Math.Sin(b += 0.02) * .5 + .5) * .5 + .5) * 255;
-                dmxControl.ChangeValue(362, (byte)t);
-                
-                t = ((Math.Sin(c += 0.03) * .5 + .5) * .5 + .5) * 255;
-                dmxControl.ChangeValue(363, (byte)t);
+                double t = ((Math.Sin(a += 0.01) * .5 + .5));
 
-                t = ((Math.Sin(d += 0.04) * .5 + .5) * .5 + .5) * 255;
-                dmxControl.ChangeValue(364, (byte)t);
+
+                if (t <= 0.01 && canChange)
+                {
+                    if (i < 4)
+                        i++;
+                    else
+                        i = 1;
+                    canChange = false;
+                }
+
+                if (t >= 0.99)
+                    canChange = true;
+
+                dmxControl.ChangeValue(i, (byte)(t * 255));
+                dmxControl.SendData();
+                
+                t = ((Math.Sin(b += 0.01) * .5 + .5)) * 255;
+
+                dmxControl.ChangeValue(2, (byte)t);
+
+                t = ((Math.Sin(c += 0.01) * .5 + .5)) * 255;
+                dmxControl.ChangeValue(3, (byte)t);
+
+                t = ((Math.Sin(d += 0.01) * .5 + .5)) * 255;
+                dmxControl.ChangeValue(4, (byte)t);
                 */
 
                 commandParser.Parse(Console.ReadLine(), dmxControl);
