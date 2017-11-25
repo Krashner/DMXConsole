@@ -34,38 +34,46 @@ namespace DMXConsole
             device.Close();
         }
 
+        public void PrintDeviceData()
+        {
+            Console.WriteLine();
+
+            uint deviceID = 0;
+            FTDI.FT_DEVICE ftDevice = new FTDI.FT_DEVICE();
+            string des;
+
+            device.GetDeviceID(ref deviceID);
+            device.GetDeviceType(ref ftDevice);
+            device.GetDescription(out des);
+
+            Console.WriteLine("Device ID: " + deviceID);
+            Console.WriteLine("Device Type: " + ftDevice);
+            Console.WriteLine("Device Description: " + des);
+
+            Console.WriteLine();
+        }
+
         public void OpenPort()
         {
+            //this opens the first dmx device it finds, maybe add command to specify
             FTDI.FT_STATUS result = device.OpenByIndex(0);
             if (result == FTDI.FT_STATUS.FT_OK)
             {
+                device.SetTimeouts(5000, 5000);
+
                 connected = true;
-                Console.WriteLine("DMX connected");
-                uint deviceID = 0;
-                FTDI.FT_DEVICE ftDevice = new FTDI.FT_DEVICE();
-                string des;
-
-                device.GetDeviceID(ref deviceID);
-                device.GetDeviceType(ref ftDevice);
-                device.GetDescription(out des);
-
-                Console.WriteLine("Device ID: " + deviceID);
-                Console.WriteLine("Device Type: " + ftDevice);
-                Console.WriteLine("Device Description: " + des);
-
-
+                Console.WriteLine("DMX Connected");
 
                 header = new byte[4];
                 data = new byte[513];
                 footer = new byte[1] { 0xE7 };//end packet
-
-
+                
                 //header data
                 header[0] = 0x7E;     //start packet
                 header[1] = 06;       //tx mode
                 header[2] = 01;       //???
                 header[3] = 02;       //start code
-
+                
                 SendData();
             }
             else
@@ -78,6 +86,7 @@ namespace DMXConsole
         public void ClosePort()
         {
             device.Close();
+            Console.WriteLine("DMX Disconnected");
         }
 
         public bool deviceConnected()
@@ -106,5 +115,6 @@ namespace DMXConsole
                 Console.WriteLine("Could not write to device");
             }
         }
+        
     }
 }
