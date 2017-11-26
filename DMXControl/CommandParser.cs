@@ -11,6 +11,9 @@ namespace DMXConsole
         private string mode = "Inclusive";
         private int rangeStart = 1, rangeEnd = 512, red, green, blue, white;
         private int[] redChannels, greenChannels, blueChannels, whiteChannels;
+        private XmlManager<DmxGroup> xmlManager;
+        private List<DmxGroup> dmxGroups;
+
 
         public CommandParser()
         {
@@ -18,6 +21,8 @@ namespace DMXConsole
             greenChannels = new int[0];
             blueChannels = new int[0];
             whiteChannels = new int[0];
+
+            dmxGroups = new List<DmxGroup>();
 
             Console.WriteLine("----------------------------------------------------------------------------------");
             UpdateData();
@@ -34,39 +39,26 @@ namespace DMXConsole
         {
             string[] args = input.Split(' ');
             //to do, remove blanks
-            int address = 0, value = 0;
 
             switch (args[0].ToLower())
             {
-                case "write":
-                    if (int.TryParse(args[1], out address))
-                    {
-                        if (int.TryParse(args[2], out value))
-                        {
-                            dmxControl.ChangeValue(address, (byte)value);
-                        }
-                        else {
-                            Console.WriteLine("Invalid Input");
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("Invalid Input");
-                    }; break;
+                case "write": Write(args, dmxControl); break;
                 case "range": WriteRange(args[1], dmxControl); break;
                 case "set":
                     if (args.Length > 1)
                         switch (args[1].ToLower())
                         {
                             case "range": SetRange(args); break;
-                            case "red":
+                            /*case "red":
                             case "r": SetChannel(args, "Red", ref redChannels); break;
                             case "green":
                             case "g": SetChannel(args, "Green", ref greenChannels); break;
                             case "blue":
                             case "b": SetChannel(args, "Blue", ref blueChannels); break;
                             case "white":
-                            case "w": SetChannel(args, "White", ref whiteChannels); break;
+                            case "w": SetChannel(args, "White", ref whiteChannels); break;*/
+                            case "channels":
+                            case "channel": SetChannel(args, ref redChannels); break;
                         }
                     break;
                 case "mode":
@@ -77,29 +69,20 @@ namespace DMXConsole
                         mode = "Exclusive";
                     break;
                 case "red":
-                case "r":
                     if (!FullCommand(args)) break;
-                    if (!WriteChannel(redChannels, args[1], dmxControl)) break;
-                    break;
+                    WriteChannel(redChannels, args[1], dmxControl); break;
                 case "green":
-                case "g":
                     if (!FullCommand(args)) break;
-                    if (!WriteChannel(greenChannels, args[1], dmxControl)) break;
-                    break;
+                    WriteChannel(greenChannels, args[1], dmxControl); break;
                 case "blue":
-                case "b":
                     if (!FullCommand(args)) break;
-                    if (!WriteChannel(blueChannels, args[1], dmxControl)) break;
-                    break;
+                    WriteChannel(blueChannels, args[1], dmxControl); break;
                 case "white":
-                case "w":
                     if (!FullCommand(args)) break;
-                    if (!WriteChannel(whiteChannels, args[1], dmxControl)) break;
-                    break;
+                    WriteChannel(whiteChannels, args[1], dmxControl); break;
                 case "all":
                     if (!FullCommand(args)) break;
-                    if (WriteAll(args[1], dmxControl)) break;//broke
-                    break;
+                    WriteAll(args[1], dmxControl); break;
                 case "channels": ShowChannels(); break;
                 case "clear": Console.Clear(); break;
                 case "device": dmxControl.PrintDeviceData(); break;
@@ -144,25 +127,13 @@ namespace DMXConsole
         private void ShowChannels()
         {
             Console.WriteLine("******************************************************************");
-            Console.Write("Red: ");
-            for (int i = 0; i < redChannels.Length; i++)
-            { Console.Write(redChannels[i] + " "); }
-            Console.WriteLine();
-
-            Console.Write("Green: ");
-            for (int i = 0; i < greenChannels.Length; i++)
-            { Console.Write(greenChannels[i] + " "); }
-            Console.WriteLine();
-
-            Console.Write("Blue: ");
-            for (int i = 0; i < blueChannels.Length; i++)
-            { Console.Write(blueChannels[i] + " "); }
-            Console.WriteLine();
-
-            Console.Write("White: ");
-            for (int i = 0; i < whiteChannels.Length; i++)
-            { Console.Write(whiteChannels[i] + " "); }
-            Console.WriteLine();
+            for (int i = 0; i < dmxGroups.Count; i++)
+            {
+                Console.Write(dmxGroups[i].Name + " ");
+                for (int n = 0; n < dmxGroups[i].Channels.Count; n++)
+                    Console.Write(dmxGroups[i].Channels[n] + " ");
+                Console.WriteLine();
+            }
             Console.WriteLine("******************************************************************");
         }
 
@@ -218,6 +189,32 @@ namespace DMXConsole
             Console.WriteLine();
         }
 
+        private void Write(string[] args, DmxDriver dmxControl)
+        {
+            //arg 0 is base command, 1 is address, 2 is value
+            int address = 0, value = 0;
+
+            if (int.TryParse(args[1], out address))
+            {
+                if (int.TryParse(args[2], out value))
+                {
+                    dmxControl.ChangeValue(address, (byte)value);
+                }
+                else if (args[2].ToLower() == "on")
+                {
+                    dmxControl.ChangeValue(address, 255);//channel
+                }
+                else if (args[2].ToLower() == "off")
+                {
+                    dmxControl.ChangeValue(address, 0);
+                }
+                else
+                {
+                    Console.WriteLine("Invalid Input");
+                }
+            }
+        }
+
         private bool WriteRange(string input, DmxDriver dmxControl)
         {
             int tempVal = 0;
@@ -244,6 +241,7 @@ namespace DMXConsole
                     return false;
                 }
             }
+
             return true;
         }
 
@@ -286,17 +284,19 @@ namespace DMXConsole
         }
 
         //set the channel addresses
-        private void SetChannel(string[] args, string channelName, ref int[] channelArray)
+        private void SetChannel(string[] args, ref int[] channelArray)
         {
-            channelArray = new int[args.Length - 2];
-            Console.Write("Channel " + channelName + ": ");
+            DmxGroup dmxGroup = new DmxGroup();
+            dmxGroup.Name = args[2];
 
-            for (int i = 2; i < args.Length; i++)
+            Console.Write("Channel " + dmxGroup.Name + ": ");
+
+            for (int i = 3; i < args.Length; i++)
             {
                 int val = 0;
                 if (int.TryParse(args[i], out val))
                 {
-                    channelArray[i - 2] = val;
+                    dmxGroup.Channels.Add(val);
                     Console.Write(val + " ");
                 }
                 else
@@ -305,7 +305,7 @@ namespace DMXConsole
                     return;
                 }
             }
-
+            dmxGroups.Add(dmxGroup);
             Console.WriteLine();
         }
 

@@ -50,9 +50,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandParser.cs" />
-    <Compile Include="DMXDriver.cs" />
+    <Compile Include="DmxChannel.cs" />
+    <Compile Include="DmxDriver.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="XmlManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
