@@ -39,57 +39,57 @@ namespace DMXConsole
         {
             string[] args = input.Split(' ');
             //to do, remove blanks
-
+            //move all write commands to case write. cant currently write custom groups
+            //make command to display range
             switch (args[0].ToLower())
             {
-                case "write": Write(args, dmxControl); break;
-                case "range": WriteRange(args[1], dmxControl); break;
+                case "write":
+                    if (args.Length > 1)
+                        switch (args[1].ToLower())
+                        {
+                            case "1":// channel, NEED TO GET INT
+                                if (!FullCommand(args, 3)) break;
+                                Write(args, dmxControl); break;
+                            case "range":
+                                if (!FullCommand(args, 3)) break;
+                                WriteRange(args[2], dmxControl); break;
+                            case "all":
+                                if (!FullCommand(args, 3)) break;
+                                WriteAll(args[2], dmxControl); break;
+                            default: Console.WriteLine("Invalid Input"); break;
+                        }
+                    else
+                    {
+                        Console.WriteLine("Invalid Input");
+                    }
+                    break;
                 case "set":
                     if (args.Length > 1)
                         switch (args[1].ToLower())
                         {
                             case "range": SetRange(args); break;
-                            /*case "red":
-                            case "r": SetChannel(args, "Red", ref redChannels); break;
-                            case "green":
-                            case "g": SetChannel(args, "Green", ref greenChannels); break;
-                            case "blue":
-                            case "b": SetChannel(args, "Blue", ref blueChannels); break;
-                            case "white":
-                            case "w": SetChannel(args, "White", ref whiteChannels); break;*/
-                            case "channels":
-                            case "channel": SetChannel(args, ref redChannels); break;
+                            case "group": SetChannel(args); break;
+                            default: Console.WriteLine("Invalid Input"); break;
                         }
+                    else
+                    {
+                        Console.WriteLine("Invalid Input");
+                    }
                     break;
                 case "mode":
-                    if (!FullCommand(args)) break;
+                    if (!FullCommand(args, 2)) break;
                     if (args[1].ToLower() == "inclusive" || args[1].ToLower() == "i")
                         mode = "Inclusive";
                     else if (args[1].ToLower() == "exclusive" || args[1].ToLower() == "e")
                         mode = "Exclusive";
                     break;
-                case "red":
-                    if (!FullCommand(args)) break;
-                    WriteChannel(redChannels, args[1], dmxControl); break;
-                case "green":
-                    if (!FullCommand(args)) break;
-                    WriteChannel(greenChannels, args[1], dmxControl); break;
-                case "blue":
-                    if (!FullCommand(args)) break;
-                    WriteChannel(blueChannels, args[1], dmxControl); break;
-                case "white":
-                    if (!FullCommand(args)) break;
-                    WriteChannel(whiteChannels, args[1], dmxControl); break;
-                case "all":
-                    if (!FullCommand(args)) break;
-                    WriteAll(args[1], dmxControl); break;
-                case "channels": ShowChannels(); break;
+                case "range": Console.WriteLine("Range: " + rangeStart + "-" + rangeEnd); break;
+                case "groups": ShowChannels(); break;
                 case "clear": Console.Clear(); break;
                 case "device": dmxControl.PrintDeviceData(); break;
                 case "help":
                 case "?":
-                case "/h":
-                    HelpCommand(); break;
+                case "/h": HelpCommand(); break;
                 case "quit": Environment.Exit(0); break;
                 case "open":
                     dmxControl.OpenPort();
@@ -99,26 +99,22 @@ namespace DMXConsole
                     dmxControl.ClosePort();
                     Console.WriteLine("Port Closed");
                     return;
-                default:
-                    Console.WriteLine("Invalid Input");
-                    return;
+                default: Console.WriteLine("Invalid Input"); return;
             }
-            dmxControl.SendData();
-            UpdateData();
+            //UpdateData();
         }
 
         private void HelpCommand()
         {
             Console.WriteLine("******************************************************************");
-            Console.WriteLine("     Write:                  write [address] [value]");
+            Console.WriteLine("     Write:                  write [address] [value | on | off]");
+            Console.WriteLine("     Write All:              write all [value | on | off]");
+            Console.WriteLine("     View Range:             range");
             Console.WriteLine("     Set Range:              set range [start] [end]");
             Console.WriteLine("     Write Range:            range [start] [end]");
-            Console.WriteLine("     View Channels:          channels");
-            Console.WriteLine("     Set Channels:           set [channel] [address]");
-            Console.WriteLine("     Write Channels:         [channel] [value]");
-            Console.WriteLine("     Toggle Channel:         [channel] [on | off]");
-            Console.WriteLine("     Write All:              all [value]");
-            Console.WriteLine("     Toggle All:             all [on | off]");
+            Console.WriteLine("     View Groups:            groups");
+            Console.WriteLine("     Set Group:              set [group] [address]");
+            Console.WriteLine("     Write Group:            write [group] [value]");
             Console.WriteLine("     Clear Console:          clear");
             Console.WriteLine("******************************************************************");
         }
@@ -137,9 +133,9 @@ namespace DMXConsole
             Console.WriteLine("******************************************************************");
         }
 
-        private bool FullCommand(string[] args)
+        private bool FullCommand(string[] args, int length)
         {
-            if (args.Length < 2)
+            if (args.Length < length)
             {
                 Console.WriteLine("Invalid Input");
                 return false;
@@ -189,11 +185,36 @@ namespace DMXConsole
             Console.WriteLine();
         }
 
+        //set the channel addresses
+        private void SetChannel(string[] args)
+        {
+            DmxGroup dmxGroup = new DmxGroup();
+            dmxGroup.Name = args[2];
+
+            Console.Write("Group " + dmxGroup.Name + ": ");
+
+            for (int i = 3; i < args.Length; i++)
+            {
+                int val = 0;
+                if (int.TryParse(args[i], out val))
+                {
+                    dmxGroup.Channels.Add(val);
+                    Console.Write(val + " ");
+                }
+                else
+                {
+                    Console.WriteLine("Invalid Channel Input");
+                    return;
+                }
+            }
+            dmxGroups.Add(dmxGroup);
+            Console.WriteLine();
+        }
+
         private void Write(string[] args, DmxDriver dmxControl)
         {
             //arg 0 is base command, 1 is address, 2 is value
             int address = 0, value = 0;
-
             if (int.TryParse(args[1], out address))
             {
                 if (int.TryParse(args[2], out value))
@@ -213,6 +234,7 @@ namespace DMXConsole
                     Console.WriteLine("Invalid Input");
                 }
             }
+            dmxControl.SendData();
         }
 
         private bool WriteRange(string input, DmxDriver dmxControl)
@@ -241,7 +263,7 @@ namespace DMXConsole
                     return false;
                 }
             }
-
+            dmxControl.SendData();
             return true;
         }
 
@@ -271,42 +293,8 @@ namespace DMXConsole
                     return false;
                 }
             }
+            dmxControl.SendData();
             return true;
-
-        }
-
-        //clamp val between min and max
-        public int Clamp(int val, int min, int max)
-        {
-            if (val > max) val = max;
-            if (val < min) val = min;
-            return val;
-        }
-
-        //set the channel addresses
-        private void SetChannel(string[] args, ref int[] channelArray)
-        {
-            DmxGroup dmxGroup = new DmxGroup();
-            dmxGroup.Name = args[2];
-
-            Console.Write("Channel " + dmxGroup.Name + ": ");
-
-            for (int i = 3; i < args.Length; i++)
-            {
-                int val = 0;
-                if (int.TryParse(args[i], out val))
-                {
-                    dmxGroup.Channels.Add(val);
-                    Console.Write(val + " ");
-                }
-                else
-                {
-                    Console.WriteLine("Invalid Channel Input");
-                    return;
-                }
-            }
-            dmxGroups.Add(dmxGroup);
-            Console.WriteLine();
         }
 
         //write to the channel
@@ -336,7 +324,16 @@ namespace DMXConsole
                     return false;
                 }
             }
+            dmxControl.SendData();
             return true;
+        }
+
+        //clamp val between min and max
+        public int Clamp(int val, int min, int max)
+        {
+            if (val > max) val = max;
+            if (val < min) val = min;
+            return val;
         }
     }
 }

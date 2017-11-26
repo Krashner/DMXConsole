@@ -18,7 +18,7 @@ namespace DMXConsole
         private const int DMX_PACKET_SIZE = 512;
         */
         public bool connected { get; private set; }
-        private FTDI device;
+        public FTDI device { get; private set; }
         private int startAddr;
 
         private byte[] header, data, footer;
@@ -32,6 +32,11 @@ namespace DMXConsole
         ~DmxDriver()
         {
             device.Close();
+        }
+
+        public void CyclePort()
+        {
+            device.CyclePort();
         }
 
         public void PrintDeviceData()
@@ -57,7 +62,7 @@ namespace DMXConsole
         {
             //this opens the first dmx device it finds, maybe add command to specify
             FTDI.FT_STATUS result = device.OpenByIndex(0);
-            if (result == FTDI.FT_STATUS.FT_OK)
+            if (result == FTDI.FT_STATUS.FT_OK && device.IsOpen)
             {
                 device.SetTimeouts(5000, 5000);
 
@@ -106,6 +111,12 @@ namespace DMXConsole
         {
             FTDI.FT_STATUS result;
             uint bytes_written = 0;
+
+            if (!device.IsOpen)
+            {
+                Console.WriteLine("Could not write to device, Port is closed");
+                return;
+            }
 
             byte[] packet = header.Concat(data.Concat(footer)).ToArray();
             result = device.Write(packet, packet.Length, ref bytes_written);
