@@ -28,7 +28,7 @@ namespace DMXConsole
                 Thread.Sleep(TimeSpan.FromSeconds(1));
             }
 
-            //Pulse();
+          //  Pulse();
 
             while (true)
             {

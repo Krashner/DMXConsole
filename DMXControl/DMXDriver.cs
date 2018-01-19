@@ -20,11 +20,19 @@ namespace DMXConsole
         public bool connected { get; private set; }
         public FTDI device { get; private set; }
         private int startAddr;
+        private byte startCode;
+
+        public byte StartCode
+        {
+            get { return startCode; }
+            set { startCode = value; }
+        }
 
         private byte[] header, data, footer;
 
         public DmxDriver(int baseDmxAddr)
         {
+            startCode = 02;
             startAddr = baseDmxAddr;
             device = new FTDI();
         }
@@ -58,6 +66,7 @@ namespace DMXConsole
             Console.WriteLine();
         }
 
+
         public void OpenPort()
         {
             //this opens the first dmx device it finds, maybe add command to specify
@@ -77,7 +86,8 @@ namespace DMXConsole
                 header[0] = 0x7E;     //start packet
                 header[1] = 06;       //tx mode
                 header[2] = 01;       //???
-                header[3] = 02;       //start code
+                header[3] = startCode;       //start code
+                Console.WriteLine(header[2]);
 
                 SendData();
             }

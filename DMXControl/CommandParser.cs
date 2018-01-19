@@ -99,6 +99,18 @@ namespace DMXConsole
                     dmxControl.ClosePort();
                     Console.WriteLine("Port Closed");
                     return;
+                case "startcode":
+                    if (args.Length > 1)
+                    {
+                        int parsedCode = 0;
+                        if (int.TryParse(args[1], out parsedCode))
+                            dmxControl.StartCode = (byte)parsedCode;
+                        else
+                            Console.WriteLine("Invalid Input");
+                    }
+                    else
+                        Console.WriteLine("Current Start Code: " + dmxControl.StartCode);
+                    break;
                 default: Console.WriteLine("Invalid Input"); return;
             }
             //UpdateData();
@@ -115,10 +127,11 @@ namespace DMXConsole
             Console.WriteLine("     View Groups:            groups");
             Console.WriteLine("     Set Group:              set [group] [address]");
             Console.WriteLine("     Write Group:            write [group] [value]");
+            Console.WriteLine("     View Start Code:        startcode");
+            Console.WriteLine("     Set Start Code:         startcode [value]");
             Console.WriteLine("     Clear Console:          clear");
             Console.WriteLine("******************************************************************");
         }
-
 
         private void ShowChannels()
         {
